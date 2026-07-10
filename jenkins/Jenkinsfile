@@ -2,19 +2,46 @@ pipeline {
     agent { label 'linux-node1' }
 
     tools {
-        maven 'Maven'   // ✅ ADD THIS
+        jdk 'JDK21'        // ✅ Force Jenkins to use Java 21
+        maven 'Maven'      // ✅ Use configured Maven
     }
 
     options {
         skipStagesAfterUnstable()
+        timestamps()
+    }
+
+    environment {
+        // Optional fallback (ensures correct Java is used)
+        JAVA_HOME = tool(name: 'JDK21', type: 'jdk')
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
 
     stages {
+
+        stage('Debug Environment') {
+            steps {
+                sh '''
+                echo "===== JAVA INFO ====="
+                echo "JAVA_HOME=$JAVA_HOME"
+                which java
+                java -version
+                which javac
+                javac -version
+
+                echo "===== MAVEN INFO ====="
+                which mvn
+                mvn -version
+                '''
+            }
+        }
+
         stage('Build') {
             steps {
                 sh 'mvn -B -DskipTests clean package'
             }
         }
+
         stage('Test') {
             steps {
                 sh 'mvn test'
@@ -25,10 +52,23 @@ pipeline {
                 }
             }
         }
-        stage('Deliver') { 
+
+        stage('Deliver') {
             steps {
-                sh './jenkins/scripts/deliver.sh' 
+                sh '''
+                chmod +x jenkins/scripts/deliver.sh
+                ./jenkins/scripts/deliver.sh
+                '''
             }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Build completed successfully!"
+        }
+        failure {
+            echo "❌ Build failed. Check logs above."
         }
     }
 }
