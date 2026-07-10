@@ -1,8 +1,14 @@
 pipeline {
     agent { label 'linux-node1' }
+
+    tools {
+        maven 'Maven'   // ✅ ADD THIS
+    }
+
     options {
         skipStagesAfterUnstable()
     }
+
     stages {
         stage('Build') {
             steps {
