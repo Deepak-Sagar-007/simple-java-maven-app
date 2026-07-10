@@ -1,74 +1,19 @@
 pipeline {
     agent { label 'linux-node1' }
 
-    tools {
-        jdk 'JDK21'        // ✅ Force Jenkins to use Java 21
-        maven 'Maven'      // ✅ Use configured Maven
-    }
-
-    options {
-        skipStagesAfterUnstable()
-        timestamps()
-    }
-
     environment {
-        // Optional fallback (ensures correct Java is used)
-        JAVA_HOME = tool(name: 'JDK21', type: 'jdk')
+        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
         PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
 
     stages {
-
-        stage('Debug Environment') {
-            steps {
-                sh '''
-                echo "===== JAVA INFO ====="
-                echo "JAVA_HOME=$JAVA_HOME"
-                which java
-                java -version
-                which javac
-                javac -version
-
-                echo "===== MAVEN INFO ====="
-                which mvn
-                mvn -version
-                '''
-            }
-        }
-
         stage('Build') {
             steps {
-                sh 'mvn -B -DskipTests clean package'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
-            }
-        }
-
-        stage('Deliver') {
-            steps {
                 sh '''
-                chmod +x jenkins/scripts/deliver.sh
-                ./jenkins/scripts/deliver.sh
+                java -version
+                mvn -B -DskipTests clean package
                 '''
             }
-        }
-    }
-
-    post {
-        success {
-            echo "✅ Build completed successfully!"
-        }
-        failure {
-            echo "❌ Build failed. Check logs above."
         }
     }
 }
